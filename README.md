@@ -1,3 +1,3 @@
 # dev
 Dev Lath Sess
-docker compse akka-java-activemq
+docker-compose akka-java-activemq
