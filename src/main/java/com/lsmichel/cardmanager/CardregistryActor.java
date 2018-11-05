@@ -123,7 +123,7 @@ public class CardregistryActor extends AbstractActor {
                           icardIn.put("cardUserBrithPlace", card.getCardUserBrithPlace());
                      if(card.getCardNocaisse() !=null && ! card.getCardNocaisse().isEmpty())
                           icardIn.put("cardNocaisse", card.getCardNocaisse());
-                      ConnectionFactory connectionFactory = new ActiveMQConnectionFactory("admin" , "admin", "tcp://172.20.0.2:61616");
+                      ConnectionFactory connectionFactory = new ActiveMQConnectionFactory("admin" , "admin", "tcp://activemq:61616");
                       Sink<Map<String, Object>, CompletionStage<Done>> jmsSink =
                       JmsProducer.mapSink(JmsProducerSettings.create(connectionFactory).withQueue("clientID_"+card.getCardNocaisse()));
                       CompletionStage<Done> finished = Source.single(icardIn).runWith(jmsSink, materializer);
@@ -160,7 +160,7 @@ public class CardregistryActor extends AbstractActor {
                        ActorSystem system = ActorSystem.create();
                        Materializer materializer = ActorMaterializer.create(system);
                        int tn = GetCurrentPosQueNum(posCardInfo.getCardNocaisse());
-                       ConnectionFactory connectionFactory = new ActiveMQConnectionFactory("admin" , "admin", "tcp://172.20.0.2:61616");
+                       ConnectionFactory connectionFactory = new ActiveMQConnectionFactory("admin" , "admin", "tcp://activemq:61616");
                        Source<Map<String, Object>, KillSwitch> jmsSource =
                        JmsConsumer.mapSource(
                        JmsConsumerSettings.create(connectionFactory).withQueue("clientID_"+posCardInfo.getCardNocaisse()));
