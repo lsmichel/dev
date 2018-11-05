@@ -1,0 +1,22 @@
+version: '3'
+services:
+  web:
+    build: .
+    ports:
+     - "8080:8080"
+    links:
+      - activemq
+  activemq:
+    image: "webcenter/activemq:latest"
+    ports:
+      - 8161:8161
+      - 61616:61616
+      - 61613:61613
+    environment:
+      ACTIVEMQ_NAME: activemq
+      ACTIVEMQ_REMOVE_DEFAULT_ACCOUNT: 'false'
+      ACTIVEMQ_ADMIN_LOGIN: admin
+      ACTIVEMQ_ADMIN_PASSWORD: admin
+      ACTIVEMQ_CONFIG_MINMEMORY: 1024
+      ACTIVEMQ_CONFIG_MAXMEMORY: 4096
+      ACTIVEMQ_CONFIG_SCHEDULERENABLED: 'true'
