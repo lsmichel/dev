@@ -7,6 +7,7 @@ package com.lsmichel.cardmanager;
 
 import akka.NotUsed;
 import akka.actor.ActorRef;
+import static akka.actor.ActorRef.noSender;
 import akka.actor.ActorSystem;
 import akka.http.javadsl.ConnectHttp;
 import akka.http.javadsl.Http;
@@ -37,16 +38,30 @@ public class CardManagerRunner extends AllDirectives{
         final Http http = Http.get(system);
         final ActorMaterializer materializer = ActorMaterializer.create(system);
         
-        ActorRef userRegistryActor = system.actorOf(CardregistryActor.props(), "userRegistryActor");
-
+        ActorRef supervisorActor = system.actorOf(SupervisorActor.props(), "supervisorActor");
         
-        CardManagerRunner app = new CardManagerRunner(system, userRegistryActor);
+        ActorRef cardRegistryActor = system.actorOf(CardregistryActor.props(), "cardRegistryActor");
+        
+        supervisorActor.tell(cardRegistryActor, noSender());
+        
+        CardManagerRunner app = new CardManagerRunner(system, cardRegistryActor);
 
         final Flow<HttpRequest, HttpResponse, NotUsed> routeFlow = app.createRoute().flow(system, materializer);
         http.bindAndHandle(routeFlow, ConnectHttp.toHost(ip, 8080), materializer);
 
         System.out.println("Server online at http://"+ip+":8080/");
-    }
+        system.registerOnTermination( () -> {
+             System.out.println("=========================================================>  System is terminate");
+        });
+        Runtime.getRuntime().addShutdownHook(new Thread() 
+          { 
+             public void run() 
+            { 
+              System.out.println("Shutdown Hook is running !"); 
+              system.terminate();
+          } 
+       }); 
+     }
     
   protected Route createRoute() {
         return cardRoutes.routes();

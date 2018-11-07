@@ -6,10 +6,12 @@
 package com.lsmichel.cardmanager;
 
 import akka.Done;
+import akka.NotUsed;
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
+import akka.actor.Terminated;
 import akka.stream.ActorMaterializer;
 import akka.stream.KillSwitch;
 import akka.stream.Materializer;
@@ -21,13 +23,17 @@ import akka.stream.javadsl.*;
 import com.lsmichel.cardmanager.ICardMessages.CardCreateActionPerformet;
 import com.lsmichel.cardmanager.ICardMessages.InfoCard;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import javax.jms.ConnectionFactory;
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.activemq.ActiveMQPrefetchPolicy;
 
 /**
  *
@@ -36,6 +42,7 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 public class CardregistryActor extends AbstractActor {
      private  Map<String , Integer> currentMapCount = new  HashMap<String , Integer> ();
      private  Map<String ,List<Map<String ,Object>>> curretcards = new HashMap<String ,List<Map<String ,Object>>>();
+     private final ActorRef child = getContext().actorOf(Props.empty(), "target");
     //private  Map<String, Object> last
     //private static ActorSystem system = ActorSystem.create();
     //private static Materializer materializer = ActorMaterializer.create(system);
@@ -44,6 +51,51 @@ public class CardregistryActor extends AbstractActor {
     static Props props() {
     return Props.create(CardregistryActor.class);
   }
+    @Override
+      public void preStart() {
+    }
+     @Override
+     public void preRestart(Throwable reason, Optional<Object> message) {
+          ConnectionFactory connectionFactory = new ActiveMQConnectionFactory("admin" , "admin", "tcp://activemq:61616");
+          ActorSystem system = ActorSystem.create();
+          Materializer materializer = ActorMaterializer.create(system);
+           System.out.println("=========================================================> "+ curretcards.keySet().size());
+           try {
+                  System.out.println("=========================================================> "+ curretcards.keySet().size());
+                   curretcards.keySet().forEach(key -> {
+                   Sink<Map<String, Object>, CompletionStage<Done>> jmsSink =
+                   JmsProducer.mapSink(JmsProducerSettings.create(connectionFactory).withQueue(key));
+                   CompletionStage<Done> finished = Source.from(curretcards.get(key)).runWith(jmsSink, materializer);
+                   finished.whenComplete(
+                     (value, exception) -> {
+                                
+                         if(exception!=null){
+                             exception.printStackTrace();
+                         }
+                    }).toCompletableFuture().join();
+                 
+                  });
+               } 
+                 catch(Exception ex) {
+                  ex.printStackTrace();      
+               }
+            System.out.println("=========================================================> "+ curretcards.keySet().size());
+         for (ActorRef each : getContext().getChildren()) {
+              getContext().unwatch(each);
+              getContext().stop(each);
+         }
+         postStop();
+     }
+     
+     @Override
+     public void postRestart(Throwable reason) {
+        preStart();
+     }
+     
+    @Override
+    public void postStop() {
+         System.out.println("=========================================================> "+ curretcards.keySet().size());
+     }
     
     @Override
     public Receive createReceive() {
@@ -80,6 +132,7 @@ public class CardregistryActor extends AbstractActor {
                });
                
             })*/
+                    
             .match(ICardMessages.CardCreate.class, (ICardMessages.CardCreate cardInfo) -> {
                  ActorSystem system = ActorSystem.create();
                  Materializer materializer = ActorMaterializer.create(system);
@@ -160,7 +213,11 @@ public class CardregistryActor extends AbstractActor {
                        ActorSystem system = ActorSystem.create();
                        Materializer materializer = ActorMaterializer.create(system);
                        int tn = GetCurrentPosQueNum(posCardInfo.getCardNocaisse());
-                       ConnectionFactory connectionFactory = new ActiveMQConnectionFactory("admin" , "admin", "tcp://activemq:61616");
+                       ActiveMQPrefetchPolicy activeMQPrefetchPolicy = new ActiveMQPrefetchPolicy() ;
+                       activeMQPrefetchPolicy.setQueuePrefetch(2);
+                       ActiveMQConnectionFactory connectionFactory = new 
+                                   ActiveMQConnectionFactory("admin" , "admin", "tcp://activemq:61616");
+                       // connectionFactory.setPrefetchPolicy(activeMQPrefetchPolicy);
                        Source<Map<String, Object>, KillSwitch> jmsSource =
                        JmsConsumer.mapSource(
                        JmsConsumerSettings.create(connectionFactory).withQueue("clientID_"+posCardInfo.getCardNocaisse()));
@@ -178,6 +235,12 @@ public class CardregistryActor extends AbstractActor {
                         sender.tell(infoCard ,getSelf());
                     }
                 }
+            })
+            .match(Terminated.class, t ->  {
+               System.out.println("=========================================================> "+ curretcards.keySet().size());
+            })
+            .matchAny(t -> {
+                  System.out.println("=========================================================> "+ t.getClass().getName() + " " +  t.getClass().getCanonicalName()+ " " + t.getClass().getTypeName());
             })
             .build();
     }
