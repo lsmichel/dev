@@ -6,7 +6,6 @@
 package com.lsmichel.cardmanager;
 
 import akka.Done;
-import akka.NotUsed;
 import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -23,12 +22,10 @@ import akka.stream.javadsl.*;
 import com.lsmichel.cardmanager.ICardMessages.CardCreateActionPerformet;
 import com.lsmichel.cardmanager.ICardMessages.InfoCard;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import javax.jms.ConnectionFactory;
@@ -100,39 +97,7 @@ public class CardregistryActor extends AbstractActor {
     @Override
     public Receive createReceive() {
            
-            return receiveBuilder()
-           /* .match(ICardMessages.CardCreate.class, (ICardMessages.CardCreate cardInfo) -> {
-               ActorRef sender =  getSender();
-               List<String> lstring = new ArrayList<String>();
-               final List<Card> cards = new ArrayList<Card>();
-               final SlickSession session = SlickSession.forConfig("slick-mysql");
-               ActorSystem system = ActorSystem.create();
-               Materializer materializer = ActorMaterializer.create(system);
-               system.registerOnTermination(session::close);
-               final String insertCardQuery = CardregistryActor.SetCardDataInQuery(cardInfo.getCard()) ;
-               System.out.println(insertCardQuery);
-               final CompletionStage<Done> done = Slick.source(
-                session,
-                //insertCardQuery,
-                "SELECT card_id  FROM card_tbl" ,
-                (SlickRow row) -> {
-                    lstring.add("test");
-                    //System.out.println(row.toString());
-                    return new CardCreateActionPerformet("created" , cardInfo.getCard().getCardNumber());
-                })
-                .runWith(Sink.ignore(), materializer);
-               
-                done.whenComplete(
-                    (value, exception) -> {
-                    System.out.println(lstring.size());
-                    CardCreateActionPerformet cardCreateActionPerformet = new CardCreateActionPerformet("created" , cardInfo.getCard().getCardNumber());
-                    sender
-                    .tell(cardCreateActionPerformet ,getSelf());
-                    system.terminate();
-               });
-               
-            })*/
-                    
+            return receiveBuilder()   
             .match(ICardMessages.CardCreate.class, (ICardMessages.CardCreate cardInfo) -> {
                  ActorSystem system = ActorSystem.create();
                  Materializer materializer = ActorMaterializer.create(system);

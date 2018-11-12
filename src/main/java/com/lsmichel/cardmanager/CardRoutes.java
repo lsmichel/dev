@@ -9,18 +9,8 @@ import akka.actor.ActorSystem;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.http.javadsl.marshallers.jackson.Jackson;
-import static akka.http.javadsl.model.HttpMethods.CONNECT;
-import static akka.http.javadsl.model.HttpMethods.DELETE;
-import static akka.http.javadsl.model.HttpMethods.GET;
-import static akka.http.javadsl.model.HttpMethods.HEAD;
-import static akka.http.javadsl.model.HttpMethods.OPTIONS;
-import static akka.http.javadsl.model.HttpMethods.PATCH;
-import static akka.http.javadsl.model.HttpMethods.POST;
-import static akka.http.javadsl.model.HttpMethods.PUT;
-import static akka.http.javadsl.model.HttpMethods.TRACE;
 import akka.http.javadsl.model.StatusCode;
 import akka.http.javadsl.model.StatusCodes;
-import akka.http.javadsl.model.headers.AccessControlAllowMethods;
 import akka.http.javadsl.model.headers.AccessControlAllowOrigin;
 import static akka.http.javadsl.model.headers.HttpOriginRanges.ALL;
 import akka.http.javadsl.server.Route;
@@ -121,7 +111,6 @@ public class CardRoutes extends AllDirectives{
                                 .thenApply(obj ->(InfoCard) obj);
                         return onSuccess(() -> cardCreated,
                                 info -> {
-                                   
                                     return complete(StatusCodes.CREATED, info, Jackson.marshaller());
                                 });
                         }
